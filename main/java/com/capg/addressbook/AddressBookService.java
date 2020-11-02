@@ -1,8 +1,27 @@
 package com.capg.addressbook;
 
+import java.util.List;
+import java.util.logging.Logger;
+
 public class AddressBookService {
 
-	public static void main(String[] args) {
-		System.out.println("Welcome to address book database system.");
+	private static Logger log = Logger.getLogger(AddressBookService.class.getName());
+
+	private List<Contact> contactList;
+	private AddressBookDBService addressBookDBService;
+
+	public AddressBookService() {
+		addressBookDBService = AddressBookDBService.getInstance();
+	}
+
+	public AddressBookService(List<Contact> contactList) {
+		this();
+		this.contactList = contactList;
+	}
+
+	// Reading and returning list of contact from DB
+	public List<Contact> readDataFromDB() {
+		contactList = addressBookDBService.readAddressBookDB();
+		return contactList;
 	}
 }
