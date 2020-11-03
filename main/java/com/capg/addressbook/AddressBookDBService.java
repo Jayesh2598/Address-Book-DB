@@ -14,6 +14,10 @@ import java.util.logging.Logger;
 
 public class AddressBookDBService {
 
+	public enum Column {
+		CITY, STATE;
+	}
+
 	private static Logger log = Logger.getLogger(AddressBookDBService.class.getName());
 
 	private PreparedStatement addressBookPreparedStatement;
@@ -55,9 +59,31 @@ public class AddressBookDBService {
 		return getAddressBookDataAfterExecutingQuery(sql);
 	}
 
+	public int getCountOfContactsFromCityOrState(Column columnName, String value) throws AddressBookSystemException {
+		String column = null;
+		if (columnName == Column.CITY)
+			column = "city";
+		else if (columnName == Column.STATE)
+			column = "state";
+		String sql = String.format("select COUNT(c.firstName) as No_Of_Contacts " + "from address a, contact c, book b " 
+									+ "WHERE c.book_name = b.name AND a.id = c.id "
+									+ "AND %s = '%s';", column, value);
+		try (Connection connection = this.getConnection(); 
+				Statement statement = connection.createStatement();) {
+			ResultSet resultSet = statement.executeQuery(sql);
+			int noOfContacts = -1;
+			while(resultSet.next())
+				noOfContacts = resultSet.getInt("No_Of_Contacts");
+			return noOfContacts;
+		} catch (SQLException e) {
+			throw new AddressBookSystemException("Exception occurred.");
+		}
+	}
+
 	private List<Contact> getAddressBookDataAfterExecutingQuery(String sql) {
 		List<Contact> contactList = new ArrayList<>();
-		try (Connection connection = this.getConnection(); Statement statement = connection.createStatement();) {
+		try (Connection connection = this.getConnection(); 
+				Statement statement = connection.createStatement();) {
 			ResultSet resultSet = statement.executeQuery(sql);
 			contactList = this.getAddressBookData(resultSet);
 		} catch (SQLException e) {
@@ -116,8 +142,8 @@ public class AddressBookDBService {
 		try {
 			Connection connection = this.getConnection();
 			String sql = "select c.firstName, c.lastName, a.address, a.city, a.state, a.zip, c.Phone_Number, c.Email, b.name, b.type "
-						+ "from address a, contact c, book b "
-						+ "WHERE c.book_name = b.name AND a.id = c.id AND firstName = ? AND lastName = ?;";
+					+ "from address a, contact c, book b "
+					+ "WHERE c.book_name = b.name AND a.id = c.id AND firstName = ? AND lastName = ?;";
 			addressBookPreparedStatement = connection.prepareStatement(sql);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -134,4 +160,5 @@ public class AddressBookDBService {
 		log.log(Level.INFO, () -> "Connection Successful : " + connection);
 		return connection;
 	}
+
 }

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.capg.addressbook.AddressBookDBService.Column;
+
 public class AddressBookService {
 
 	private static Logger log = Logger.getLogger(AddressBookService.class.getName());
@@ -34,6 +36,17 @@ public class AddressBookService {
 		Contact contact = this.getContactData(firstName, lastName);
 		if (contact != null)
 			contact.phoneNo = phoneNumber;
+	}
+	
+	public int getCountOfContactsFromCityOrState(Column columnName, String value) {
+		int noOfContacts;
+		try {
+			noOfContacts = addressBookDBService.getCountOfContactsFromCityOrState(columnName, value);
+			return noOfContacts;
+		} catch (AddressBookSystemException e) {
+			log.log(Level.SEVERE, "Exception occured.");
+			return -1;
+		}
 	}
 	
 	public boolean checkContactListInSyncWithDB(String firstName, String lastName) {

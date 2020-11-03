@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.Assert;
 
+import com.capg.addressbook.AddressBookDBService.Column;
 import com.capg.addressbook.AddressBookService;
 import com.capg.addressbook.Contact;
 
@@ -38,5 +39,15 @@ public class AddressBookDBServiceTest {
 		LocalDate endDate = LocalDate.now();
 		List<Contact> contactList = addressBookService.getContactsInDateRange(Date.valueOf(startDate), Date.valueOf(endDate));
 		Assert.assertEquals(3, contactList.size());
+	}
+	
+	@Test //UC19
+	public void givenDatabase_ShouldReturnContactsInACityOrState_AndMatchCount() {
+		AddressBookService addressBookService = new AddressBookService();
+		addressBookService.readDataFromDB();
+		int contactListByCity = addressBookService.getCountOfContactsFromCityOrState(Column.CITY, "Mumbai");
+		int contactListByState = addressBookService.getCountOfContactsFromCityOrState(Column.STATE, "Maharashtra");
+		Assert.assertEquals(2, contactListByCity);
+		Assert.assertEquals(2, contactListByState);
 	}
 }
