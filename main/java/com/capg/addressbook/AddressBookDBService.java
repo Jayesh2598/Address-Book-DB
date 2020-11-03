@@ -1,6 +1,7 @@
 package com.capg.addressbook;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +20,7 @@ public class AddressBookDBService {
 	private static AddressBookDBService addressBookDBService;
 
 	public AddressBookDBService() {
-		// Does not make AddressBookDBService obj
+		// Does not let other classes make AddressBookDBService object
 	}
 
 	public static AddressBookDBService getInstance() {
@@ -33,16 +34,25 @@ public class AddressBookDBService {
 				+ "from address a, contact c, book b WHERE c.book_name = b.name AND a.id = c.id;";
 		return this.getAddressBookDataAfterExecutingQuery(sql);
 	}
-	
+
 	public int updateContactData(String firstName, String lastName, String phoneNumber) {
-		String sql = String.format("UPDATE contact SET Phone_Number = '%s' WHERE firstName = '%s' && lastName = '%s';", phoneNumber, firstName, lastName);
-		try (Connection connection = this.getConnection();
-				Statement statement = connection.createStatement();) {
-				return statement.executeUpdate(sql);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+		String sql = String.format("UPDATE contact SET Phone_Number = '%s' WHERE firstName = '%s' && lastName = '%s';",
+				phoneNumber, firstName, lastName);
+		try (Connection connection = this.getConnection(); Statement statement = connection.createStatement();) {
+			return statement.executeUpdate(sql);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		return 0;
+	}
+
+	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
+		String sql = String.format(
+				"select c.firstName, c.lastName, a.address, a.city, a.state, a.zip, c.Phone_Number, c.Email, b.name, b.type "
+						+ "from address a, contact c, book b " + "WHERE c.book_name = b.name AND a.id = c.id "
+						+ "AND date BETWEEN CAST('%s' AS DATE) AND CAST('%s' AS DATE)",
+				startDate, endDate);
+		return getAddressBookDataAfterExecutingQuery(sql);
 	}
 
 	private List<Contact> getAddressBookDataAfterExecutingQuery(String sql) {
@@ -77,7 +87,8 @@ public class AddressBookDBService {
 					contact.addressList.add(addressObj);
 				} else {
 					addressList.add(addressObj);
-					contactList.add(new Contact(firstName, lastName, phoneNumber, email, addressList, bookName, bookType));
+					contactList
+							.add(new Contact(firstName, lastName, phoneNumber, email, addressList, bookName, bookType));
 				}
 			}
 		} catch (SQLException e) {
@@ -88,15 +99,14 @@ public class AddressBookDBService {
 
 	public List<Contact> getContactData(String firstName, String lastName) {
 		List<Contact> employeePayrollList = null;
-		if(this.addressBookPreparedStatement == null)
+		if (this.addressBookPreparedStatement == null)
 			this.prepareStatementForAddressBook();
 		try {
 			addressBookPreparedStatement.setString(1, firstName);
 			addressBookPreparedStatement.setString(2, lastName);
 			ResultSet resultSet = addressBookPreparedStatement.executeQuery();
 			employeePayrollList = this.getAddressBookData(resultSet);
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return employeePayrollList;
@@ -106,15 +116,14 @@ public class AddressBookDBService {
 		try {
 			Connection connection = this.getConnection();
 			String sql = "select c.firstName, c.lastName, a.address, a.city, a.state, a.zip, c.Phone_Number, c.Email, b.name, b.type "
-					+ "from address a, contact c, book b "
-					+ "WHERE c.book_name = b.name AND a.id = c.id AND firstName = ? AND lastName = ?;";
+						+ "from address a, contact c, book b "
+						+ "WHERE c.book_name = b.name AND a.id = c.id AND firstName = ? AND lastName = ?;";
 			addressBookPreparedStatement = connection.prepareStatement(sql);
-		}
-		catch(SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private Connection getConnection() throws SQLException {
 		String dbURL = "jdbc:mysql://localhost:3306/address_book_service?useSSL=false";
 		String userName = "root";

@@ -1,5 +1,6 @@
 package com.capg.addressbook;
 
+import java.sql.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,5 +46,9 @@ public class AddressBookService {
 					.filter(item -> item.firstName.equals(firstName) && item.lastName.equals(lastName))
 					.findFirst()
 					.orElse(null);
+	}
+
+	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
+		return addressBookDBService.getContactsInDateRange(startDate, endDate);
 	}
 }
