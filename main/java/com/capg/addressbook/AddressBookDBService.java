@@ -34,7 +34,7 @@ public class AddressBookDBService {
 	}
 
 	public List<Contact> readAddressBookDB() {
-		String sql = "select c.firstName, c.lastName, a.address, a.city, a.state, a.zip, c.Phone_Number, c.Email, b.name, b.type "
+		String sql = "select c.FirstName, c.LastName, a.address, a.city, a.state, a.ZIP, c.Phone_Number, c.Email, b.name, b.type, c.date "
 				+ "from address a, contact c, book b WHERE c.book_name = b.name AND a.id = c.id;";
 		return this.getAddressBookDataAfterExecutingQuery(sql);
 	}
@@ -52,7 +52,7 @@ public class AddressBookDBService {
 
 	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
 		String sql = String.format(
-				"select c.firstName, c.lastName, a.address, a.city, a.state, a.zip, c.Phone_Number, c.Email, b.name, b.type "
+				"select c.FirstName, c.LastName, a.address, a.city, a.state, a.ZIP, c.Phone_Number, c.Email, b.name, b.type, c.date "
 						+ "from address a, contact c, book b " + "WHERE c.book_name = b.name AND a.id = c.id "
 						+ "AND date BETWEEN CAST('%s' AS DATE) AND CAST('%s' AS DATE)",
 				startDate, endDate);
@@ -96,28 +96,29 @@ public class AddressBookDBService {
 		List<Contact> contactList = new ArrayList<>();
 		try {
 			while (resultSet.next()) {
-				String firstName = resultSet.getString("firstName");
-				String lastName = resultSet.getString("lastName");
+				String firstName = resultSet.getString("FirstName");
+				String lastName = resultSet.getString("LastName");
+				String email = resultSet.getString("Email");
+				String phoneNumber = resultSet.getString("Phone_Number");
+				Date addDate = resultSet.getDate("date");
 				String address = resultSet.getString("address");
 				String city = resultSet.getString("city");
 				String state = resultSet.getString("state");
-				int zip = resultSet.getInt("zip");
-				String phoneNumber = resultSet.getString("Phone_Number");
-				String email = resultSet.getString("Email");
+				int zip = resultSet.getInt("ZIP");
 				String bookName = resultSet.getString("name");
 				String bookType = resultSet.getString("type");
-				Contact contact = new Contact(firstName, lastName, email, phoneNumber);
+				Contact contact = new Contact(firstName, lastName, email, phoneNumber, addDate);
 				Address addressObj = new Address(address, city, state, zip);
-				List<Address> addressList = new ArrayList<>();
+				List<Address> addList = new ArrayList<>();
 				if (contactList.contains(contact)) {
 					contact.addressList.add(addressObj);
 				} else {
-					addressList.add(addressObj);
-					contactList
-							.add(new Contact(firstName, lastName, phoneNumber, email, addressList, bookName, bookType));
+					addList.add(addressObj);
+					contactList.add(new Contact(firstName, lastName, email, phoneNumber, addDate, addList, bookName, bookType));
 				}
 			}
 		} catch (SQLException e) {
+			System.out.println("getAddressBookData exception.");
 			e.printStackTrace();
 		}
 		return contactList;
@@ -133,6 +134,7 @@ public class AddressBookDBService {
 			ResultSet resultSet = addressBookPreparedStatement.executeQuery();
 			employeePayrollList = this.getAddressBookData(resultSet);
 		} catch (SQLException e) {
+			System.out.println("getContactData() exception.");
 			e.printStackTrace();
 		}
 		return employeePayrollList;
@@ -141,11 +143,12 @@ public class AddressBookDBService {
 	private void prepareStatementForAddressBook() {
 		try {
 			Connection connection = this.getConnection();
-			String sql = "select c.firstName, c.lastName, a.address, a.city, a.state, a.zip, c.Phone_Number, c.Email, b.name, b.type "
+			String sql = "select c.FirstName, c.LastName, a.address, a.city, a.state, a.ZIP, c.Phone_Number, c.Email, b.name, b.type, c.date "
 					+ "from address a, contact c, book b "
 					+ "WHERE c.book_name = b.name AND a.id = c.id AND firstName = ? AND lastName = ?;";
 			addressBookPreparedStatement = connection.prepareStatement(sql);
 		} catch (SQLException e) {
+			System.out.println("Couldn't prepare prepared statement.");
 			e.printStackTrace();
 		}
 	}
@@ -159,6 +162,81 @@ public class AddressBookDBService {
 		connection = DriverManager.getConnection(dbURL, userName, password);
 		log.log(Level.INFO, () -> "Connection Successful : " + connection);
 		return connection;
+	}
+
+	public Contact addContactToAddressBookDB(String firstName, String lastName, String email, String phNo, Date date,
+			String address, String city, String state, int zip, String bookName, String bookType) throws AddressBookSystemException {
+		int id = -1;
+		Contact contact = null;
+		Connection connection = null;
+		try {
+			connection = this.getConnection();
+			connection.setAutoCommit(false);
+		}
+		catch (SQLException e) {
+			throw new AddressBookSystemException("Couldn't establish connection.");
+		}
+		
+		try (Statement statement = connection.createStatement();) {
+			String sql1 = String.format("INSERT INTO book (name, type) VALUES ('%s', '%s');", bookName, bookType);
+			statement.executeUpdate(sql1);
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			throw new AddressBookSystemException("Unable to insert into book.");
+		}
+		
+		try (Statement statement = connection.createStatement();) {
+			String sql2 = String.format("INSERT INTO contact (FirstName, LastName, Email, Phone_Number, date, book_name)"
+										+" VALUES ('%s', '%s', '%s', '%s', '%s', '%s');"
+										, firstName, lastName, email, phNo, date, bookName);
+			int rowsAffected = statement.executeUpdate(sql2);
+			if(rowsAffected == 1) {
+				String sql = String.format("select c.id from contact c WHERE "
+								+ "FirstName = '%s' AND LastName = '%s';", firstName, lastName);
+				ResultSet resultSet = statement.executeQuery(sql);
+				if(resultSet.next())
+					id = resultSet.getInt("id");
+			}
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			throw new AddressBookSystemException("Unable to insert into contact.");
+		}
+		
+		try (Statement statement = connection.createStatement();) {
+			String sql3 = String.format("INSERT INTO address (id, address, city, state, ZIP)"
+										+ " VALUES ('%s', '%s', '%s', '%s', %s);"
+										,id, address, city, state, zip);
+			List<Address> addressArray = new ArrayList<>();
+			addressArray.add(new Address(address, city, state, zip));
+			int rowsAffected = statement.executeUpdate(sql3);
+			if(rowsAffected == 1) {
+				contact = new Contact(firstName, lastName, email, phNo, date, addressArray, bookName, bookType);
+				connection.commit();
+			}
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			throw new AddressBookSystemException("Unable to insert into address.");
+		} finally {
+			if(connection != null)
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+		}
+		return contact;
 	}
 
 }

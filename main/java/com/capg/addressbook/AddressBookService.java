@@ -64,4 +64,12 @@ public class AddressBookService {
 	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
 		return addressBookDBService.getContactsInDateRange(startDate, endDate);
 	}
+
+	public void addContactToAddressBook(String firstName, String lastName, String email, String phNo, Date date, String address, String city, String state, int zip, String bookName, String bookType) {
+		try {
+			contactList.add(addressBookDBService.addContactToAddressBookDB(firstName, lastName, email, phNo, date, address, city, state, zip, bookName, bookType));
+		} catch (AddressBookSystemException e) {
+			log.log(Level.SEVERE, e.getMessage());
+		}
+	}
 }

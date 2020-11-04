@@ -50,4 +50,14 @@ public class AddressBookDBServiceTest {
 		Assert.assertEquals(2, contactListByCity);
 		Assert.assertEquals(2, contactListByState);
 	}
+	
+	@Test //UC20
+	public void givenNewContact_WhenAdded_ShouldSyncWithDB() {
+		AddressBookService addressBookService = new AddressBookService();
+		addressBookService.readDataFromDB();
+		Date date = Date.valueOf(LocalDate.now());
+		addressBookService.addContactToAddressBook("Buddh", "Dev", "buddh@gmail.com", "7045279239", date, "Nagar", "Diu", "Gujarat", 400607, "Casual", "Acquaintance");
+		boolean result = addressBookService.checkContactListInSyncWithDB("Buddh", "Dev");
+		assertTrue(result); 
+	}
 }
