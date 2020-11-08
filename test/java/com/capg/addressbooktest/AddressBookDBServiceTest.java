@@ -4,11 +4,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
 import org.junit.Assert;
 
+import com.capg.addressbook.Address;
 import com.capg.addressbook.AddressBookDBService.Column;
 import com.capg.addressbook.AddressBookService;
 import com.capg.addressbook.Contact;
@@ -59,5 +62,23 @@ public class AddressBookDBServiceTest {
 		addressBookService.addContactToAddressBook("Buddh", "Dev", "buddh@gmail.com", "7045279239", date, "Nagar", "Diu", "Gujarat", 400607, "Casual", "Acquaintance");
 		boolean result = addressBookService.checkContactListInSyncWithDB("Buddh", "Dev");
 		assertTrue(result); 
+	}
+	
+	@Test //UC21
+	public void givenMultipleContacts_WhenAdded_ShouldMatchContactCount() {
+		Date date = Date.valueOf(LocalDate.now());
+		List<Address> list = new ArrayList<>();
+		list.add(new Address("City Square", "Tokyo", "Japan", 700700));
+		Contact[] contactArray = {
+				new Contact("Hiruzen", "Sarutobi", "hiruzen@gmail.com", "9999999991", date, list, "A", "A"),
+				new Contact("Minato", "Namikaze", "minato@gmail.com", "9999999992", date, list, "B", "B"),
+				new Contact("Tsunade", "Senju", "tsu@gmail.com", "9999999993", date, list, "C", "C"),
+				new Contact("Kakashi", "Hatake", "kakashi@gmail.com", "9999999994", date, list, "D", "D")
+		};
+		AddressBookService addressBookService = new AddressBookService();
+		addressBookService.readDataFromDB();
+		addressBookService.addContactsWithThreads(Arrays.asList(contactArray));
+		List<Contact> book = addressBookService.readDataFromDB();
+		Assert.assertEquals(9, book.size());
 	}
 }

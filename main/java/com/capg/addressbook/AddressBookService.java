@@ -1,7 +1,9 @@
 package com.capg.addressbook;
 
 import java.sql.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,9 +51,21 @@ public class AddressBookService {
 		}
 	}
 	
+	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
+		return addressBookDBService.getContactsInDateRange(startDate, endDate);
+	}
+	
 	public boolean checkContactListInSyncWithDB(String firstName, String lastName) {
 		List<Contact> list = addressBookDBService.getContactData(firstName, lastName);
 		return list.get(0).equals(getContactData(firstName, lastName));
+	}
+	
+
+	public boolean checkContactListInSyncWithDB(List<Contact> list) {
+		boolean result = true;
+		for(Contact contact: list) 
+			result = result && contactList.contains(contact);
+		return result;
 	}
 	
 	private Contact getContactData(String firstName, String lastName) {
@@ -60,16 +74,35 @@ public class AddressBookService {
 					.findFirst()
 					.orElse(null);
 	}
-
-	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
-		return addressBookDBService.getContactsInDateRange(startDate, endDate);
-	}
-
+	
 	public void addContactToAddressBook(String firstName, String lastName, String email, String phNo, Date date, String address, String city, String state, int zip, String bookName, String bookType) {
 		try {
 			contactList.add(addressBookDBService.addContactToAddressBookDB(firstName, lastName, email, phNo, date, address, city, state, zip, bookName, bookType));
 		} catch (AddressBookSystemException e) {
 			log.log(Level.SEVERE, e.getMessage());
+		}
+	}
+
+	public void addContactsWithThreads(List<Contact> contactList) {
+		Map<Integer, Boolean> contactAdditionStatus = new HashMap<>();
+		contactList.forEach(contact -> {
+			Runnable task = () -> {
+				contactAdditionStatus.put(contact.hashCode(), false);
+				Address address = contact.addressList.get(0);
+				log.log(Level.INFO, ()-> "Contact being added: " + Thread.currentThread().getName());
+				this.addContactToAddressBook(contact.firstName, contact.lastName, contact.email, contact.phoneNo, contact.addDate, 
+						address.getAddress(), address.getCity(), address.getState(), address.getZip(), contact.addressBookName, contact.addressBookType);
+				contactAdditionStatus.put(contact.hashCode(), true);
+				log.log(Level.INFO, ()-> "Contact added: " + Thread.currentThread().getName());
+			};
+			Thread thread = new Thread(task, contact.firstName);
+			thread.start();
+		});
+		try {
+			while(contactAdditionStatus.containsValue(false));
+					Thread.sleep(10);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 }

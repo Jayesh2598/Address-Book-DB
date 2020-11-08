@@ -79,6 +79,81 @@ public class AddressBookDBService {
 			throw new AddressBookSystemException("Exception occurred.");
 		}
 	}
+	
+	public Contact addContactToAddressBookDB(String firstName, String lastName, String email, String phNo, Date date,
+			String address, String city, String state, int zip, String bookName, String bookType) throws AddressBookSystemException {
+		int id = -1;
+		Contact contact = null;
+		Connection connection = null;
+		try {
+			connection = this.getConnection();
+			connection.setAutoCommit(false);
+		}
+		catch (SQLException e) {
+			throw new AddressBookSystemException("Couldn't establish connection.");
+		}
+		
+		try (Statement statement = connection.createStatement();) {
+			String sql1 = String.format("INSERT INTO book (name, type) VALUES ('%s', '%s');", bookName, bookType);
+			statement.executeUpdate(sql1);
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			throw new AddressBookSystemException("Unable to insert into book.");
+		}
+		
+		try (Statement statement = connection.createStatement();) {
+			String sql2 = String.format("INSERT INTO contact (FirstName, LastName, Email, Phone_Number, date, book_name)"
+										+" VALUES ('%s', '%s', '%s', '%s', '%s', '%s');"
+										, firstName, lastName, email, phNo, date, bookName);
+			int rowsAffected = statement.executeUpdate(sql2);
+			if(rowsAffected == 1) {
+				String sql = String.format("select c.id from contact c WHERE "
+								+ "FirstName = '%s' AND LastName = '%s';", firstName, lastName);
+				ResultSet resultSet = statement.executeQuery(sql);
+				if(resultSet.next())
+					id = resultSet.getInt("id");
+			}
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			throw new AddressBookSystemException("Unable to insert into contact.");
+		}
+		
+		try (Statement statement = connection.createStatement();) {
+			String sql3 = String.format("INSERT INTO address (id, address, city, state, ZIP)"
+										+ " VALUES ('%s', '%s', '%s', '%s', %s);"
+										,id, address, city, state, zip);
+			List<Address> addressArray = new ArrayList<>();
+			addressArray.add(new Address(address, city, state, zip));
+			int rowsAffected = statement.executeUpdate(sql3);
+			if(rowsAffected == 1) {
+				contact = new Contact(firstName, lastName, email, phNo, date, addressArray, bookName, bookType);
+				connection.commit();
+			}
+		} catch (SQLException e) {
+			try {
+				connection.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+			throw new AddressBookSystemException("Unable to insert into address.");
+		} finally {
+			if(connection != null)
+				try {
+					connection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+		}
+		return contact;
+	}
 
 	private List<Contact> getAddressBookDataAfterExecutingQuery(String sql) {
 		List<Contact> contactList = new ArrayList<>();
@@ -163,80 +238,4 @@ public class AddressBookDBService {
 		log.log(Level.INFO, () -> "Connection Successful : " + connection);
 		return connection;
 	}
-
-	public Contact addContactToAddressBookDB(String firstName, String lastName, String email, String phNo, Date date,
-			String address, String city, String state, int zip, String bookName, String bookType) throws AddressBookSystemException {
-		int id = -1;
-		Contact contact = null;
-		Connection connection = null;
-		try {
-			connection = this.getConnection();
-			connection.setAutoCommit(false);
-		}
-		catch (SQLException e) {
-			throw new AddressBookSystemException("Couldn't establish connection.");
-		}
-		
-		try (Statement statement = connection.createStatement();) {
-			String sql1 = String.format("INSERT INTO book (name, type) VALUES ('%s', '%s');", bookName, bookType);
-			statement.executeUpdate(sql1);
-		} catch (SQLException e) {
-			try {
-				connection.rollback();
-			} catch (SQLException e1) {
-				e1.printStackTrace();
-			}
-			throw new AddressBookSystemException("Unable to insert into book.");
-		}
-		
-		try (Statement statement = connection.createStatement();) {
-			String sql2 = String.format("INSERT INTO contact (FirstName, LastName, Email, Phone_Number, date, book_name)"
-										+" VALUES ('%s', '%s', '%s', '%s', '%s', '%s');"
-										, firstName, lastName, email, phNo, date, bookName);
-			int rowsAffected = statement.executeUpdate(sql2);
-			if(rowsAffected == 1) {
-				String sql = String.format("select c.id from contact c WHERE "
-								+ "FirstName = '%s' AND LastName = '%s';", firstName, lastName);
-				ResultSet resultSet = statement.executeQuery(sql);
-				if(resultSet.next())
-					id = resultSet.getInt("id");
-			}
-		} catch (SQLException e) {
-			try {
-				connection.rollback();
-			} catch (SQLException e1) {
-				e1.printStackTrace();
-			}
-			throw new AddressBookSystemException("Unable to insert into contact.");
-		}
-		
-		try (Statement statement = connection.createStatement();) {
-			String sql3 = String.format("INSERT INTO address (id, address, city, state, ZIP)"
-										+ " VALUES ('%s', '%s', '%s', '%s', %s);"
-										,id, address, city, state, zip);
-			List<Address> addressArray = new ArrayList<>();
-			addressArray.add(new Address(address, city, state, zip));
-			int rowsAffected = statement.executeUpdate(sql3);
-			if(rowsAffected == 1) {
-				contact = new Contact(firstName, lastName, email, phNo, date, addressArray, bookName, bookType);
-				connection.commit();
-			}
-		} catch (SQLException e) {
-			try {
-				connection.rollback();
-			} catch (SQLException e1) {
-				e1.printStackTrace();
-			}
-			throw new AddressBookSystemException("Unable to insert into address.");
-		} finally {
-			if(connection != null)
-				try {
-					connection.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-		}
-		return contact;
-	}
-
 }

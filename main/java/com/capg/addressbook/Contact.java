@@ -3,19 +3,7 @@ package com.capg.addressbook;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
-
-class Address {
-
-	private String address, city, state;
-	private int zip;
-
-	public Address(String address, String city, String state, int zip) {
-		this.address = address;
-		this.city = city;
-		this.state = state;
-		this.zip = zip;
-	}
-}
+import java.util.Objects;
 
 public class Contact {
 
@@ -51,5 +39,10 @@ public class Contact {
 		Contact that = (Contact) obj;
 		return firstName.equals(that.firstName) && lastName.equals(that.lastName) && 
 				phoneNo.equals(that.phoneNo) && email.equals(that.email);
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(firstName, lastName, phoneNo, email);
 	}
 }
