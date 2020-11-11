@@ -1,6 +1,6 @@
 package com.capg.addressbook;
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -9,9 +9,9 @@ public class Contact {
 
 	public String firstName, lastName, email, phoneNo, addressBookName, addressBookType;
 	public List<Address> addressList = new ArrayList<>();
-	public Date addDate;
+	public LocalDate addDate;
 	
-	public Contact(String firstName, String lastName, String email, String phoneNo, Date addDate) {
+	public Contact(String firstName, String lastName, String email, String phoneNo, LocalDate addDate) {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.email = email;
@@ -19,12 +19,12 @@ public class Contact {
 		this.addDate = addDate;
 	}
 
-	public Contact(String firstName, String lastName, String email, String phoneNo, Date addDate, List<Address> addressArray) {
+	public Contact(String firstName, String lastName, String email, String phoneNo, LocalDate addDate, List<Address> addressArray) {
 		this(firstName, lastName, email, phoneNo, addDate);
 		this.addressList = addressArray;
 	}
 
-	public Contact(String firstName, String lastName, String email, String phoneNo, Date addDate, List<Address> addressArray, String addressBookName, String addressBookType) {
+	public Contact(String firstName, String lastName, String email, String phoneNo, LocalDate addDate, List<Address> addressArray, String addressBookName, String addressBookType) {
 		this(firstName, lastName, email, phoneNo, addDate, addressArray);
 		this.addressBookName = addressBookName;
 		this.addressBookType = addressBookType;

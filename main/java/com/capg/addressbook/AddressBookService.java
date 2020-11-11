@@ -1,6 +1,7 @@
 package com.capg.addressbook;
 
-import java.sql.Date;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,7 @@ public class AddressBookService {
 
 	public AddressBookService(List<Contact> contactList) {
 		this();
-		this.contactList = contactList;
+		this.contactList = new ArrayList<Contact>(contactList);
 	}
 
 	// Reading and returning list of contact from DB
@@ -51,7 +52,7 @@ public class AddressBookService {
 		}
 	}
 	
-	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
+	public List<Contact> getContactsInDateRange(LocalDate startDate, LocalDate endDate) {
 		return addressBookDBService.getContactsInDateRange(startDate, endDate);
 	}
 	
@@ -75,7 +76,7 @@ public class AddressBookService {
 					.orElse(null);
 	}
 	
-	public void addContactToAddressBook(String firstName, String lastName, String email, String phNo, Date date, String address, String city, String state, int zip, String bookName, String bookType) {
+	public void addContactToAddressBook(String firstName, String lastName, String email, String phNo, LocalDate date, String address, String city, String state, int zip, String bookName, String bookType) {
 		try {
 			contactList.add(addressBookDBService.addContactToAddressBookDB(firstName, lastName, email, phNo, date, address, city, state, zip, bookName, bookType));
 		} catch (AddressBookSystemException e) {
@@ -104,5 +105,13 @@ public class AddressBookService {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void addContact(Contact contact) {
+		contactList.add(contact);
+	}
+
+	public int countEntries() {
+		return contactList.size();
 	}
 }

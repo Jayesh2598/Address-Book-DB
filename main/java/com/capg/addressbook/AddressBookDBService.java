@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -50,12 +51,12 @@ public class AddressBookDBService {
 		return 0;
 	}
 
-	public List<Contact> getContactsInDateRange(Date startDate, Date endDate) {
+	public List<Contact> getContactsInDateRange(LocalDate startDate, LocalDate endDate) {
 		String sql = String.format(
 				"select c.FirstName, c.LastName, a.address, a.city, a.state, a.ZIP, c.Phone_Number, c.Email, b.name, b.type, c.date "
 						+ "from address a, contact c, book b " + "WHERE c.book_name = b.name AND a.id = c.id "
 						+ "AND date BETWEEN CAST('%s' AS DATE) AND CAST('%s' AS DATE)",
-				startDate, endDate);
+				Date.valueOf(startDate), Date.valueOf(endDate));
 		return getAddressBookDataAfterExecutingQuery(sql);
 	}
 
@@ -80,7 +81,7 @@ public class AddressBookDBService {
 		}
 	}
 	
-	public Contact addContactToAddressBookDB(String firstName, String lastName, String email, String phNo, Date date,
+	public Contact addContactToAddressBookDB(String firstName, String lastName, String email, String phNo, LocalDate date,
 			String address, String city, String state, int zip, String bookName, String bookType) throws AddressBookSystemException {
 		int id = -1;
 		Contact contact = null;
@@ -108,7 +109,7 @@ public class AddressBookDBService {
 		try (Statement statement = connection.createStatement();) {
 			String sql2 = String.format("INSERT INTO contact (FirstName, LastName, Email, Phone_Number, date, book_name)"
 										+" VALUES ('%s', '%s', '%s', '%s', '%s', '%s');"
-										, firstName, lastName, email, phNo, date, bookName);
+										, firstName, lastName, email, phNo, Date.valueOf(date), bookName);
 			int rowsAffected = statement.executeUpdate(sql2);
 			if(rowsAffected == 1) {
 				String sql = String.format("select c.id from contact c WHERE "
@@ -182,14 +183,14 @@ public class AddressBookDBService {
 				int zip = resultSet.getInt("ZIP");
 				String bookName = resultSet.getString("name");
 				String bookType = resultSet.getString("type");
-				Contact contact = new Contact(firstName, lastName, email, phoneNumber, addDate);
+				Contact contact = new Contact(firstName, lastName, email, phoneNumber, addDate.toLocalDate());
 				Address addressObj = new Address(address, city, state, zip);
 				List<Address> addList = new ArrayList<>();
 				if (contactList.contains(contact)) {
 					contact.addressList.add(addressObj);
 				} else {
 					addList.add(addressObj);
-					contactList.add(new Contact(firstName, lastName, email, phoneNumber, addDate, addList, bookName, bookType));
+					contactList.add(new Contact(firstName, lastName, email, phoneNumber, addDate.toLocalDate(), addList, bookName, bookType));
 				}
 			}
 		} catch (SQLException e) {
