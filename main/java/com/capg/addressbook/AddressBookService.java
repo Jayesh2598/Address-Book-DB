@@ -120,4 +120,8 @@ public class AddressBookService {
 	public int countEntries() {
 		return contactList.size();
 	}
+	
+	public boolean deleteContact(Contact contact) {
+		return contactList.remove(contact);
+	}
 }
