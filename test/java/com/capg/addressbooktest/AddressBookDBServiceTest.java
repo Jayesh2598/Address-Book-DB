@@ -5,7 +5,11 @@ import static org.junit.Assert.assertTrue;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.Test;
 import org.junit.Assert;
@@ -22,6 +26,8 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 
 public class AddressBookDBServiceTest {
+	
+	private static Logger log = Logger.getLogger(AddressBookDBServiceTest.class.getName());
 
 	@Test //UC16
 	public void givenAddressBookDB_WhenRetrieved_ShouldMatchCount() {
@@ -108,8 +114,32 @@ public class AddressBookDBServiceTest {
 		return requestSpecification.post("/address_book");
 	}
 	
+
+	private void addContactToJSONServerWithThreads(List<Contact> list, AddressBookService addressBookService) {
+		Map<Integer, Boolean> contactAdditionStatus = new HashMap<>();
+		list.forEach(contact -> {
+			Runnable task = () -> {
+				contactAdditionStatus.put(contact.hashCode(), false);
+				log.log(Level.INFO, ()-> "Contact being added: " + Thread.currentThread().getName());
+				addContactToJSONServer(contact);
+				log.log(Level.INFO, ()-> "Contact added: " + Thread.currentThread().getName());
+				addressBookService.addContact(contact);
+				contactAdditionStatus.put(contact.hashCode(), true);
+			};
+			Thread thread = new Thread(task, contact.firstName);
+			thread.start();
+		});
+		while(contactAdditionStatus.containsValue(false)) {
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	@Test
-	public void givenEmployee_WhenAdded_ShouldMatchCount() {
+	public void givenContact_WhenAdded_ShouldMatchCount() {
 		Contact[] contacts = getContactList();
 		AddressBookService addressBookService = new AddressBookService(Arrays.asList(contacts));
 		Contact contact = new Contact("Elon", "Musk", "elon@gmail.com", "9999888873", LocalDate.now());
@@ -122,5 +152,20 @@ public class AddressBookDBServiceTest {
 		
 		int entries = addressBookService.countEntries();
 		Assert.assertEquals(3, entries);
+	}
+	
+	@Test
+	public void given3Contacts_WhenAdded_ShouldMatchCount() {
+		Contact[] contacts = getContactList();
+		AddressBookService addressBookService = new AddressBookService(Arrays.asList(contacts));
+		Contact[] contactList = {
+			new Contact("Jack", "Ma", "jack@gmaill.com", "9999888874", LocalDate.now()),
+			new Contact("Bill", "Gates", "bill@gmail.com", "9999888875", LocalDate.now()),
+			new Contact("Jeff", "Bezos", "jeff@gmail.com", "9999888876", LocalDate.now())
+		};
+		addContactToJSONServerWithThreads(Arrays.asList(contactList), addressBookService);
+		getContactList();
+		int entries = addressBookService.countEntries();
+		Assert.assertEquals(6, entries);
 	}
 }
