@@ -107,10 +107,10 @@ public class AddressBookDBServiceTest {
 	}
 
 	private Response addContactToJSONServer(Contact contact) {
-		String empJson = new Gson().toJson(contact);
+		String conJson = new Gson().toJson(contact);
 		RequestSpecification requestSpecification = RestAssured.given();
 		requestSpecification.header("Content-Type", "application/json");
-		requestSpecification.body(empJson);
+		requestSpecification.body(conJson);
 		return requestSpecification.post("/address_book");
 	}
 	
@@ -167,5 +167,21 @@ public class AddressBookDBServiceTest {
 		getContactList();
 		int entries = addressBookService.countEntries();
 		Assert.assertEquals(6, entries);
+	}
+	
+	@Test
+	public void givenNewEmail_WhenUpdated_ShouldMatch200ResponseCode() {
+		Contact[] contacts = getContactList();
+		AddressBookService addressBookService = new AddressBookService(Arrays.asList(contacts));
+		addressBookService.updateContactEmail("Jeff", "Bezos", "jeffBezos@gmail.com");
+		Contact contact = addressBookService.getContactData("Jeff", "Bezos");
+		
+		String conJson = new Gson().toJson(contact);
+		RequestSpecification request = RestAssured.given();
+		request.header("Content-Type", "application/json");
+		request.body(conJson);
+		Response response = request.put("/address_book/" + contact.id);
+		int statusCode = response.getStatusCode();
+		Assert.assertEquals(200, statusCode);
 	}
 }

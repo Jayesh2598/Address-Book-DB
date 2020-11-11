@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 public class Contact {
-
+	
+	public int id;
 	public String firstName, lastName, email, phoneNo, addressBookName, addressBookType;
 	public List<Address> addressList = new ArrayList<>();
 	public LocalDate addDate;

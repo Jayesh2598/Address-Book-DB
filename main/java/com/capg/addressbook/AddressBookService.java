@@ -41,6 +41,12 @@ public class AddressBookService {
 			contact.phoneNo = phoneNumber;
 	}
 	
+	public void updateContactEmail(String firstName, String lastName, String email) {
+		Contact contact = this.getContactData(firstName, lastName);
+		if(contact != null)
+			contact.email = email;
+	}
+	
 	public int getCountOfContactsFromCityOrState(Column columnName, String value) {
 		int noOfContacts;
 		try {
@@ -69,7 +75,7 @@ public class AddressBookService {
 		return result;
 	}
 	
-	private Contact getContactData(String firstName, String lastName) {
+	public Contact getContactData(String firstName, String lastName) {
 		return this.contactList.stream()
 					.filter(item -> item.firstName.equals(firstName) && item.lastName.equals(lastName))
 					.findFirst()
